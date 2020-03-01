@@ -41,5 +41,16 @@ namespace CrossunformTask.Tests
             Assert.False(res.Count != result.Count);
             Assert.Equal(result, res);
         }
+
+        [Fact]
+        public void TestFindInBigFile()
+        {
+            var res = new Dictionary<string, int>();
+
+            TripletsFinder.FindInBigFile(path, res, 4);
+
+            Assert.False(res.Count != result.Count);
+            Assert.Equal(result, res);
+        }
     }
 }

@@ -21,7 +21,10 @@ namespace CrossinformTask
             var timer = new Stopwatch();
 
             timer.Start();
-            var task = TripletsFinder.FindInFileAsync(path, triplets, token);
+
+            //var task = TripletsFinder.FindInFileAsync(path, triplets, token); // Требует много памяти
+            var task = TripletsFinder.FindInBigFileAsync(path, triplets, token);
+
             task.ContinueWith(_ => timer.Stop());
 
             Console.WriteLine("Чтобы отобразить результат нажмите на любую клавишу.\n" +

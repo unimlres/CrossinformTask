@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,7 +43,10 @@ namespace CrossinformTask.Core
 
         /// <summary>
         /// Выполняет поиск и вычисление количества вхождений триплетов в файле path
-        /// и записывает результат в словарь result в формате {триплет} : {количество вхождений} 
+        /// и записывает результат в словарь result в формате {триплет} : {количество вхождений}
+        /// <para>
+        /// Считывает содержимое всего файла в память. Для больших файлов используйте FindInBigFileAsync.
+        /// </para>
         /// </summary>
         /// <param name="path">Путь к файлу</param>
         /// <param name="result">Словарь для результатов поиска</param>
@@ -56,7 +60,10 @@ namespace CrossinformTask.Core
 
         /// <summary>
         /// Выполняет поиск и вычисление количества вхождений триплетов в файле path
-        /// и записывает результат в словарь result в формате {триплет} : {количество вхождений} 
+        /// и записывает результат в словарь result в формате {триплет} : {количество вхождений}
+        /// <para>
+        /// Считывает содержимое всего файла в память. Для больших файлов используйте FindInBigFile.
+        /// </para>
         /// </summary>
         /// <param name="path">Путь к файлу</param>
         /// <param name="result">Словарь для результатов поиска</param>
@@ -64,6 +71,80 @@ namespace CrossinformTask.Core
         {
             var text = File.ReadAllText(path);
             FindInString(text, result);
+        }
+
+
+        /// <summary>
+        /// Выполняет поиск и вычисление количества вхождений триплетов в файле path
+        /// и записывает результат в словарь result в формате {триплет} : {количество вхождений}
+        /// <para>
+        /// Считыает файл блоками равными размеру буфера, что уменьшает расход памяти, но
+        /// требует дополнительных вычислений. Для небольших файлов используйте FindInFileAsync.
+        /// </para>
+        /// </summary>
+        /// <param name="path">Путь к файлу</param>
+        /// <param name="result">Словарь для результатов поиска</param>
+        /// <param name="cancellationToken">Токен отмены</param>
+        /// <param name="bufferSize">Размер буфера - максимальное количество символов, загружаемых в память</param>
+        public static async Task FindInBigFileAsync(string path, Dictionary<string, int> result,
+            CancellationToken cancellationToken = default, int bufferSize = 16384)
+        {
+            using var fs = new StreamReader(path);
+            var buffer = new char[bufferSize];
+            var last = ""; // Буфер для поиска между блоками. При поиске только в блоках пропускаются два триплета
+            var first = ""; // Например, возьмем 2 блока : 1234|5678, тогда - {345,456} будут пропущены 
+
+            while (!fs.EndOfStream)
+            {
+                var count = await fs.ReadBlockAsync(buffer, 0, bufferSize);
+
+                if (count < 3)
+                    break;
+
+                // Последний блок может быть меньше буфера
+                var text = new string(buffer,0, count);
+
+                first = new string(new[] { buffer[0], buffer[1] });
+                await FindInStringAsync(text, result, cancellationToken); // Длинная операция - асинхронно
+                FindInString(last + first, result, cancellationToken); // Поиск между блоками - короткая операция, поэтому синхронно
+                last = new string(new[] { buffer[count - 2], buffer[count - 1] });
+            }
+        }
+
+        /// <summary>
+        /// Выполняет поиск и вычисление количества вхождений триплетов в файле path
+        /// и записывает результат в словарь result в формате {триплет} : {количество вхождений}
+        /// <para>
+        /// Считыает файл блоками равными размеру буфера, что уменьшает расход памяти, но
+        /// требует дополнительных вычислений. Для небольших файлов используйте FindInFile.
+        /// </para>
+        /// </summary>
+        /// <param name="path">Путь к файлу</param>
+        /// <param name="result">Словарь для результатов поиска</param>
+        /// <param name="cancellationToken">Токен отмены</param>
+        /// <param name="bufferSize">Размер буфера - максимальное количество символов, загружаемых в память</param>
+        public static void FindInBigFile(string path, Dictionary<string, int> result, int bufferSize = 16384)
+        {
+            using var fs = new StreamReader(path);
+            var buffer = new char[bufferSize];
+            var last = ""; // Буфер для поиска между блоками. При поиске только в блоках пропускаются два триплета
+            var first = ""; // Например, возьмем 2 блока : 1234|5678, тогда - {345,456} будут пропущены
+
+            while (!fs.EndOfStream)
+            {
+                var count = fs.ReadBlock(buffer, 0, bufferSize);
+
+                if (count < 3)
+                    break;
+
+                // Последний блок может быть меньше буфера
+                var text = new string(buffer, 0, count);
+
+                first = new string(new[] { buffer[0], buffer[1] });
+                FindInString(text, result);
+                FindInString(last + first, result);
+                last = new string(new[] { buffer[count - 2], buffer[count - 1] });
+            }
         }
     }
 }
