@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace CrossinformTask.Core
 {
@@ -12,7 +13,22 @@ namespace CrossinformTask.Core
         /// </summary>
         /// <param name="text">Текст для поиска триплетов</param>
         /// <param name="result">Словарь для результатов поиска</param>
+        /// <param name="cancellationToken">Токен отмены</param>
+        public static async Task FindInStringAsync(string text, Dictionary<string, int> result,
+            CancellationToken cancellationToken = default)
+            => await Task.Factory.StartNew(() => FindInString(text, result, cancellationToken), cancellationToken);
+       
+        /// <summary>
+        /// Выполняет поиск и вычисление количества вхождений триплетов в text
+        /// и записывает результат в словарь result в формате {триплет} : {количество вхождений} 
+        /// </summary>
+        /// <param name="text">Текст для поиска триплетов</param>
+        /// <param name="result">Словарь для результатов поиска</param>
         public static void FindInString(string text, Dictionary<string, int> result)
+            => FindInString(text, result, default);
+
+        private static void FindInString(string text, Dictionary<string, int> result,
+            CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(text) || result == null || text.Length < 3) 
                 return;
@@ -22,6 +38,20 @@ namespace CrossinformTask.Core
                 var triplet = new string(new[] { text[i], text[i + 1], text[i + 2] });
                 result[triplet] = result.ContainsKey(triplet) ? result[triplet] + 1 : 1;
             }
+        }
+
+        /// <summary>
+        /// Выполняет поиск и вычисление количества вхождений триплетов в файле path
+        /// и записывает результат в словарь result в формате {триплет} : {количество вхождений} 
+        /// </summary>
+        /// <param name="path">Путь к файлу</param>
+        /// <param name="result">Словарь для результатов поиска</param>
+        /// <param name="cancellationToken">Токен отмены</param>
+        public static async Task FindInFileAsync(string path, Dictionary<string, int> result,
+            CancellationToken cancellationToken = default)
+        {
+            var text = await File.ReadAllTextAsync(path, cancellationToken);
+            await FindInStringAsync(text, result, cancellationToken);
         }
 
         /// <summary>
