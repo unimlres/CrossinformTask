@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,27 +17,33 @@ namespace CrossinformTask
             Console.Write("Введите путь к файлу: ");
 
             var path = Console.ReadLine();
-            var triplets = new Dictionary<string, int>();
+            var triplets = new ConcurrentDictionary<string, int>();
             using var source = new CancellationTokenSource();
             var token = source.Token;
             var timer = new Stopwatch();
 
             timer.Start();
 
-            //var task = TripletsFinder.FindInFileAsync(path, triplets, token); // Требует много памяти
-            var task = TripletsFinder.FindInBigFileAsync(path, triplets, token);
+            var task = ParallelTripletsFinder.FindInFileAsync(path, triplets, token, 32768);
 
-            task.ContinueWith(_ => timer.Stop());
+            // Требует меньше памяти, но не работает с русскими символами
+            //var task = ParallelTripletsFinder.FindInBigFileAsync(path, cTriplets, token, 32768); 
 
-            Console.WriteLine("Чтобы отобразить результат нажмите на любую клавишу.\n" +
-                              "Запрос результата раньше времени приведет к остановке " + 
-                              "поиска и выводу текущих результатов");
-            Console.Write("Нажмите любую клавишу: ");
+            var task2 = task.ContinueWith(t =>
+            {
+                timer.Stop();
+                if (t.IsCompletedSuccessfully)
+                    Console.WriteLine("Задача завершена\n" +
+                                      "Нажмите любую клавишу для отображения результата:");
+                else
+                    Console.WriteLine("\nЗадача отменена");
+            });
+
+            Console.WriteLine("Нажмите любую клавишу, чтобы отменить задачу: ");
 
             Console.ReadKey();
-
             source.Cancel();
-            Task.Delay(500).Wait();
+            Task.Delay(1000).Wait();
 
             Console.WriteLine();
             foreach (var (key, value) in triplets.OrderBy(o => -o.Value).Take(10))

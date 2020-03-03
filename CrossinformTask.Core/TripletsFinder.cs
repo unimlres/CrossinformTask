@@ -36,6 +36,7 @@ namespace CrossinformTask.Core
 
             for (var i = 0; i < text.Length - 2; i++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var triplet = new string(new[] { text[i], text[i + 1], text[i + 2] });
                 result[triplet] = result.ContainsKey(triplet) ? result[triplet] + 1 : 1;
             }
@@ -96,6 +97,7 @@ namespace CrossinformTask.Core
 
             while (!fs.EndOfStream)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var count = await fs.ReadBlockAsync(buffer, 0, bufferSize);
 
                 if (count < 3)

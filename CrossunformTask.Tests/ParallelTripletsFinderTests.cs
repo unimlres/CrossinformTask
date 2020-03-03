@@ -1,16 +1,17 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using CrossinformTask.Core;
 using Xunit;
 
 namespace CrossunformTask.Tests
 {
-    public class TripletsFinderTests
+
+    public class ParallelTripletsFinderTests
     {
         private string text = "abracadabra";
         private string path = "./Resources/test.txt";
 
-        private Dictionary<string, int> result = new Dictionary<string, int>()
+        private ConcurrentDictionary<string, int> result = new ConcurrentDictionary<string, int>()
         {
             ["abr"] = 2,
             ["bra"] = 2,
@@ -24,9 +25,9 @@ namespace CrossunformTask.Tests
         [Fact]
         public void TestFindInString()
         {
-            var res = new Dictionary<string, int>();
+            var res = new ConcurrentDictionary<string, int>();
 
-            TripletsFinder.FindInString(text, res);
+            ParallelTripletsFinder.FindInString(text, res);
 
             Assert.False(res.Count != result.Count);
             Assert.Equal(result, res);
@@ -35,9 +36,9 @@ namespace CrossunformTask.Tests
         [Fact]
         public void TestFindInFile()
         {
-            var res = new Dictionary<string, int>();
+            var res = new ConcurrentDictionary<string, int>();
 
-            TripletsFinder.FindInFile(path, res);
+            ParallelTripletsFinder.FindInFile(path, res);
 
             Assert.False(res.Count != result.Count);
             Assert.Equal(result, res);
@@ -46,9 +47,9 @@ namespace CrossunformTask.Tests
         [Fact]
         public void TestFindInBigFile()
         {
-            var res = new Dictionary<string, int>();
+            var res = new ConcurrentDictionary<string, int>();
 
-            TripletsFinder.FindInBigFile(path, res, 4);
+            ParallelTripletsFinder.FindInBigFile(path, res, 4);
 
             Assert.False(res.Count != result.Count);
             Assert.Equal(result, res);
